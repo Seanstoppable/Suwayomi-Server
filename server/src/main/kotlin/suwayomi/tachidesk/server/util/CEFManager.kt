@@ -74,33 +74,51 @@ object CEFManager {
     private val cefDir by lazy { Path(applicationDirs.dataRoot) / "bin/kcef" }
     private val releaseFile by lazy { cefDir / "release" }
 
-    fun init() =
+    fun init() {
+        // Register CEF shutdown with the centralized shutdown manager immediately
+        // This ensures the action is registered before setupShutdownHandling() completes
+        ShutdownManager.registerShutdownAction(
+            name = "CEF Disposal",
+            timeout = 5.seconds,
+        ) {
+            disposeCef()
+        }
+
+        // Also add a runtime shutdown hook for emergencies
+        Runtime.getRuntime().addShutdownHook(
+            thread(start = false) {
+                try {
+                    CefHelper.cefApp.value.getOrNull()?.let {
+                        logger.debug { "Emergency CEF disposal during shutdown hook" }
+                        it.dispose()
+                        logger.debug { "CEF emergency disposal complete" }
+                    }
+                } catch (e: Exception) {
+                    logger.error(e) { "Error during emergency CEF disposal" }
+                }
+            },
+        )
+
+        // Asynchronously initialize CEF and subscribe to config changes
         scope.launch {
             serverConfig.subscribeTo(serverConfig.kcefEnabled, CEFManager::initAsync, ignoreInitialValue = false)
-
-            // Register CEF shutdown with the centralized shutdown manager
-            ShutdownManager.registerShutdownAction(
-                name = "CEF Disposal",
-                timeout = 5.seconds,
-            ) {
-                disposeCef()
-            }
-
-            // Also add a runtime shutdown hook for emergencies
-            Runtime.getRuntime().addShutdownHook(
-                thread(start = false) {
-                    try {
-                        CefHelper.cefApp.value.getOrNull()?.let {
-                            logger.debug { "Emergency CEF disposal during shutdown hook" }
-                            it.dispose()
-                            logger.debug { "CEF emergency disposal complete" }
-                        }
-                    } catch (e: Exception) {
-                        logger.error(e) { "Error during emergency CEF disposal" }
-                    }
-                },
-            )
         }
+    }
+
+    /**
+     * Safely dispose of CEF resources
+     */
+    private suspend fun disposeCef() {
+        try {
+            CefHelper.cefApp.value.getOrNull()?.let { cefApp ->
+                logger.info { "Disposing CEF..." }
+                cefApp.dispose()
+                logger.info { "CEF disposed successfully" }
+            }
+        } catch (e: Exception) {
+            logger.warn(e) { "Error disposing CEF" }
+        }
+    }
 
     /**
      * Safely dispose of CEF resources
