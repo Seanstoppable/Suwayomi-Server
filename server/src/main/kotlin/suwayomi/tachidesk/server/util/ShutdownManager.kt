@@ -53,9 +53,10 @@ object ShutdownManager {
 
         val startTime = System.currentTimeMillis()
         val totalTimeoutMs = totalTimeout.inWholeMilliseconds
-        val actionsToExecute = synchronized(shutdownLock) {
-            shutdownActions.asReversed().toList()
-        }
+        val actionsToExecute =
+            synchronized(shutdownLock) {
+                shutdownActions.asReversed().toList()
+            }
 
         // Execute actions in reverse order (LIFO)
         for (shutdownAction in actionsToExecute) {
@@ -71,9 +72,10 @@ object ShutdownManager {
                 logger.info { "Executing shutdown action: ${shutdownAction.name}" }
                 val actionTimeoutMs = minOf(shutdownAction.timeout.inWholeMilliseconds, remainingTime)
 
-                val completed = executeWithTimeout(actionTimeoutMs) {
-                    shutdownAction.action()
-                }
+                val completed =
+                    executeWithTimeout(actionTimeoutMs) {
+                        shutdownAction.action()
+                    }
 
                 if (completed) {
                     logger.debug { "Shutdown action '${shutdownAction.name}' completed successfully" }
@@ -100,22 +102,23 @@ object ShutdownManager {
     private fun executeWithTimeout(
         timeoutMs: Long,
         block: suspend () -> Unit,
-    ): Boolean {
-        return try {
+    ): Boolean =
+        try {
             var completed = false
             var exception: Exception? = null
 
-            val actionThread = thread(start = false, name = "ShutdownAction") {
-                try {
-                    // Convert suspend function to blocking using runBlocking
-                    runBlocking {
-                        block()
+            val actionThread =
+                thread(start = false, name = "ShutdownAction") {
+                    try {
+                        // Convert suspend function to blocking using runBlocking
+                        runBlocking {
+                            block()
+                        }
+                        completed = true
+                    } catch (e: Exception) {
+                        exception = e
                     }
-                    completed = true
-                } catch (e: Exception) {
-                    exception = e
                 }
-            }
 
             actionThread.start()
             actionThread.join(timeoutMs)
@@ -133,5 +136,4 @@ object ShutdownManager {
             logger.error(e) { "Error executing action with timeout" }
             false
         }
-    }
 }
