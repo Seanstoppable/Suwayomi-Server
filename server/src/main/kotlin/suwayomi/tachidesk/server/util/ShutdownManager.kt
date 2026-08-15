@@ -136,4 +136,13 @@ object ShutdownManager {
             logger.error(e) { "Error executing action with timeout" }
             false
         }
+
+    // For testing only - resets the shutdown manager state
+    @Deprecated("Test only - do not use in production")
+    internal fun resetForTesting() {
+        isShuttingDown.set(false)
+        synchronized(shutdownLock) {
+            shutdownActions.clear()
+        }
+    }
 }

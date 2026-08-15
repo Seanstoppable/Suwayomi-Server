@@ -120,21 +120,6 @@ object CEFManager {
         }
     }
 
-    /**
-     * Safely dispose of CEF resources
-     */
-    private suspend fun disposeCef() {
-        try {
-            CefHelper.cefApp.value.getOrNull()?.let { cefApp ->
-                logger.info { "Disposing CEF..." }
-                cefApp.dispose()
-                logger.info { "CEF disposed successfully" }
-            }
-        } catch (e: Exception) {
-            logger.warn(e) { "Error disposing CEF" }
-        }
-    }
-
     private suspend fun initAsync(): Unit =
         try {
             CefHelper.cefApp.value = Result.success(null)

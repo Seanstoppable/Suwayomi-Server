@@ -62,7 +62,6 @@ object JavalinSetup {
     private val logger = KotlinLogging.logger {}
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var javalinApp: Javalin? = null
 
     fun <T> future(block: suspend CoroutineScope.() -> T): CompletableFuture<T> = scope.future(block = block)
 
@@ -171,8 +170,6 @@ object JavalinSetup {
                     }
                 }
             }
-
-        javalinApp = app
 
         // Register Javalin shutdown with ShutdownManager for coordinated shutdown
         ShutdownManager.registerShutdownAction(
