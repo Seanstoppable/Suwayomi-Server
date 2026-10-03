@@ -14,6 +14,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -21,8 +22,10 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTimeout
 import org.junit.jupiter.api.Test
 import suwayomi.tachidesk.global.model.table.UserAccountTable
+import suwayomi.tachidesk.graphql.types.ChapterType
 import suwayomi.tachidesk.manga.impl.util.lang.EMPTY
 import suwayomi.tachidesk.manga.model.table.ChapterTable
 import suwayomi.tachidesk.manga.model.table.ChapterUserTable
@@ -30,6 +33,7 @@ import suwayomi.tachidesk.manga.model.table.MangaTable
 import suwayomi.tachidesk.test.ApplicationTest
 import suwayomi.tachidesk.test.clearTables
 import suwayomi.tachidesk.test.createLibraryManga
+import java.time.Duration
 
 class ChapterDataLoaderTest : ApplicationTest() {
     private val createdUserIds = mutableListOf<Int>()
@@ -125,6 +129,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = emptyList(),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
             }
@@ -145,6 +150,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1, manga2),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
             }
@@ -165,6 +171,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.DESC),
                 )
             }
@@ -183,6 +190,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq true,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
@@ -201,6 +209,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq true,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
@@ -217,6 +226,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
             }
@@ -237,6 +247,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     orderBy = listOf(ChapterUserTable.lastReadAt to SortOrder.DESC),
                 )
             }
@@ -254,6 +265,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(mangaId),
+                    userId = 1,
                     orderBy =
                         listOf(
                             ChapterUserTable.lastReadAt to SortOrder.DESC,
@@ -275,6 +287,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(mangaId),
+                    userId = 1,
                     orderBy =
                         listOf(
                             ChapterUserTable.lastReadAt to SortOrder.DESC_NULLS_LAST,
@@ -299,6 +312,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq true,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.DESC),
                 )
@@ -317,6 +331,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(mangaId),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq true,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.DESC),
                 )
@@ -338,6 +353,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq false,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
@@ -359,6 +375,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.fetchedAt to SortOrder.DESC, ChapterTable.sourceOrder to SortOrder.DESC),
                 )
             }
@@ -380,6 +397,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.date_upload to SortOrder.DESC, ChapterTable.sourceOrder to SortOrder.DESC),
                 )
             }
@@ -397,6 +415,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(mangaId),
+                    userId = 1,
                     orderBy = listOf(ChapterTable.date_upload to SortOrder.DESC, ChapterTable.sourceOrder to SortOrder.DESC),
                 )
             }
@@ -417,6 +436,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1),
+                    userId = 1,
                     filter = ChapterTable.chapter_number greater 0f,
                     orderBy = listOf(ChapterTable.chapter_number to SortOrder.DESC_NULLS_LAST),
                 )
@@ -435,6 +455,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(mangaId),
+                    userId = 1,
                     filter = ChapterTable.chapter_number greater 0f,
                     orderBy =
                         listOf(
@@ -465,6 +486,7 @@ class ChapterDataLoaderTest : ApplicationTest() {
             transaction {
                 firstChapterPerManga(
                     mangaIds = listOf(manga1, manga2, manga3),
+                    userId = 1,
                     filter = ChapterUserTable.isRead eq false,
                     orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
                 )
@@ -605,5 +627,42 @@ class ChapterDataLoaderTest : ApplicationTest() {
 
         assertEquals(1, result.size)
         assertEquals("Chapter 1", result[mangaId]?.name)
+    }
+
+    @Test
+    fun `stays fast on H2 with many chapters`() {
+        val mangaIds = (1..SCALE_MANGAS).map { createLibraryManga("Scale $it") }
+        transaction {
+            mangaIds.forEach { mangaId ->
+                ChapterTable.batchInsert(1..SCALE_CHAPTERS_PER_MANGA) { sourceOrder ->
+                    this[ChapterTable.url] = "ch-$mangaId-$sourceOrder"
+                    this[ChapterTable.name] = "Chapter $sourceOrder"
+                    this[ChapterTable.sourceOrder] = sourceOrder
+                    this[ChapterTable.manga] = mangaId
+                    this[ChapterTable.memo] = JsonObject.EMPTY
+                }
+            }
+        }
+
+        // With the chapters leading the FROM (their user-data left join pins them there), H2
+        // re-scanned the ranking for every chapter: ~8s here, hours on a real library.
+        val result =
+            assertTimeout<Map<Int, ChapterType>>(Duration.ofSeconds(2)) {
+                transaction {
+                    firstChapterPerManga(
+                        mangaIds = mangaIds,
+                        userId = 1,
+                        orderBy = listOf(ChapterTable.sourceOrder to SortOrder.ASC),
+                    )
+                }
+            }
+
+        assertEquals(mangaIds.toSet(), result.keys)
+        assertEquals("Chapter 1", result.getValue(mangaIds.first()).name)
+    }
+
+    private companion object {
+        const val SCALE_MANGAS = 40
+        const val SCALE_CHAPTERS_PER_MANGA = 50
     }
 }
